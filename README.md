@@ -15,9 +15,9 @@
 &emsp;&emsp;讲解传统视觉识别和Opencv相关的知识。
 
 #### Lecture4: Hello PnP
-&emsp;&emsp;讲解坐标变换的知识和展示slovePnP的使用。
+&emsp;&emsp;讲解坐标变换的知识和展示solvePnP的使用。
 > [!warning] Tips
-> 由于时间原因，这节课我们没有上，而是作为队伍内部学习资料使用。
+> 由于时间原因，这节课我们可能不会上，之后将作为队员的学习资料使用
 
 #### Lecture5: Hello Kalman
 &emsp;&emsp;讲解卡尔曼滤波的相关知识。
