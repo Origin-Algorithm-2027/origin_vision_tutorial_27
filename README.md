@@ -16,8 +16,8 @@
 
 #### Lecture4: Hello PnP
 &emsp;&emsp;讲解坐标变换的知识和展示solvePnP的使用。
-> [!warning] Tips
-> 由于时间原因，这节课我们可能不会上，之后将作为队员的学习资料使用
+
+> 注：由于时间原因，PnP的内容将会和传统视觉识别一起在第三节课讲解
 
 #### Lecture5: Hello Kalman
 &emsp;&emsp;讲解卡尔曼滤波的相关知识。
