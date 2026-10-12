@@ -1,0 +1,14 @@
+#####-----shooter参数-----##### 
+auto_fire: true # 是否由自瞄控制射击
+
+first_tolerance: 3 # 近距离射击容差，degree
+second_tolerance: 2 # 远距离射击容差，degree
+judge_distance: 2 #距离判断阈值
+
+# is_multiple_tolerance: false
+# shooter_judge_distance: [2, 100]
+# shooter_tolerance: [3, 2]
+
+# high_spin_force_fire_enabled: false
+# high_spin_force_fire_enter_speed: 16.0 # rad/s
+# high_spin_force_fire_exit_speed: 12 # rad/s
