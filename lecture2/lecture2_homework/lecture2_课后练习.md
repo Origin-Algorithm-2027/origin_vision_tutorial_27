@@ -1,4 +1,4 @@
-# Lecture 4: Hello Camera 课后练习
+# Lecture 2: Hello Camera 课后练习
 [TOC]
 
 ---
