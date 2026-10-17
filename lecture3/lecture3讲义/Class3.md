@@ -41,7 +41,10 @@
    └─ main：BGR → 灰度 → 二值 → 轮廓 → 旋转矩形
 ```
 
-
+> [!note] 说明 | 像素和三原色
+> &emsp;&emsp;如果把屏幕放大到微观层面，你会发现屏幕上显示的任何一张图片、一段文字，其实都不是一个连续的整体，而是由数百万个微小的“发光点”拼凑而成的，这些点就是像素。
+> &emsp;&emsp;一个像素本身并不能发出五颜六色的光。我们之所以能看到万千色彩，是因为每个像素内部都包含了三个更小的发光单元，这就是子像素。
+> &emsp;&emsp;这三个子像素分别发出光的三原色：红（Red）、绿（Green）和蓝（Blue）。通过控制这三个子像素各自发光的强弱（亮度），它们的光混合在一起，就能在人眼中呈现出任何你想要的颜色。
 
 | 作业（`lecture3/`） | 说明 |
 |--------------------------|------|
@@ -98,6 +101,9 @@ cv::resize(img, img, cv::Size(   ,   ));      // 指定大小，先宽后高
 cv::imshow("gray", img);                      // 窗口名自己起
 cv::waitKey(0);                               // 等到按任意键再结束
 ```
+> [!note] 说明 | 图像存储方式
+> &emsp;&emsp; 正如刚刚所说，图片是由一个个像素点构成的，且通常会有宽度方向以及高度方向的像素。所有的像素进行排列之后便形成了一个矩阵，而opencv的Mat类型正好能起到对矩阵的存储作用。
+
 
 <a id="sec-cvtcolor"></a>
 
@@ -144,7 +150,7 @@ cv::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
 cv::threshold(gray, binary, 130, 255, cv::THRESH_BINARY);
 ```
 
-后续按颜色抠灯条时会用到 HSV：
+后续按颜色抠灯条时会用到 HSV（HSV在此节中不做详细的讲解，在下面两张图中，带大家大致了解一下HSV大概是一个什么东西）：
 
 ```cpp
 cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV);
@@ -175,7 +181,9 @@ cv::Mat green = channels.at(1);   // G
 cv::Mat red   = channels.at(2);   // R
 ```
 
-红方灯条在 **R 通道**往往更亮，蓝方则在 **B 通道**更亮。
+> [!note] 说明 | 通道
+> &emsp;&emsp;通道是同一张图上的一层数值。彩色图里每个像素不只存一个亮度，而是把红、绿、蓝各存一个数，这三层就是 B、G、R 三个通道。
+> &emsp;&emsp; 红方灯条在 **R 通道**往往数值更高，从而更明显，蓝方则在 **B 通道**数值更高，从而更明显。
 
 <a id="sec-contours"></a>
 ### 4. 轮廓 `cv::findContours` / `cv::drawContours`
@@ -186,7 +194,7 @@ cv::findContours(image, contours, mode, method);
 
 | 参数 | 取值 | 含义 |
 |------|----------|------|
-| `image` | 二值图 `binary_img` | 白区域会被描边 |
+| `image` | 二值图 `binary_img` | 白区域会被描边（代码形象演示） |
 | `contours` | `std::vector<std::vector<cv::Point>>` | 外层：有几条轮廓；内层：这条轮廓上的点 |
 | `mode` | `cv::RETR_EXTERNAL` | 只取最外层轮廓 |
 | `method` | `cv::CHAIN_APPROX_NONE` | 保留边界上每一个点 |
@@ -207,6 +215,8 @@ cv::drawContours(image, contours, contourIdx, color, thickness);
 
 <a id="sec-minarearect"></a>
 ### 5. 旋转矩形 `cv::minAreaRect`
+
+在找到轮廓后还不够，因为有的轮廓大，有的轮廓小，有的轮廓会包住另一个轮廓，这样画面就会非常乱，所以我们需要找到最小的旋转矩形来解决这一个问题。
 
 ```cpp
 cv::RotatedRect rr = cv::minAreaRect(contour);   // 用面积最小的旋转矩形包住轮廓
@@ -326,21 +336,10 @@ BGR 原图
 | `drawrect` | 用最小旋转矩形包住每条轮廓 | `minAreaRect` |
 | `detection` | 滤完、配完之后的灯条和装甲板 | `detect_armor` |
 
-在 `class_3/` 里看当前终态（还没有数字）。这个程序不在 `lecture3/` 里：
-
-```bash
-cd class_3
-make -C build detect_armor
-build/detect_armor                 # 默认 imgs/blue_4.jpg
-build/detect_armor imgs/red_2.jpg
-```
-
-会弹出 `binary` 和 `detection`。终端会打印灯条数、装甲板数、颜色、中心和四个角点。
-
 <a id="sec-detect-front"></a>
 ### 3. 灰度 → 二值 → 轮廓 → 旋转矩形
 
-和 `class_3/main.cpp` 完全一样：灯条是画面里最亮的东西，灰度后用阈值切开，白色连通域变成轮廓，再用旋转矩形包住。
+刚刚我们了解到了**灰度 → 二值 → 轮廓 → 旋转矩形**的过程，那么进行几何过滤、灯条配对、数字分类具体要用到哪些参数呢？
 
 ```cpp
 cv::cvtColor(bgr_img, gray_img, cv::COLOR_BGR2GRAY);
@@ -348,10 +347,6 @@ cv::threshold(gray_img, binary_img, 130, 255, cv::THRESH_BINARY);
 cv::findContours(binary_img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_NONE);
 Lightbar lightbar(cv::minAreaRect(contour), id);
 ```
-
-阈值是 `130`（课堂图实测；同济工程里常见 150）。太低会把反光、数字也切进来；太高会把远处细灯条切没。
-
-`minAreaRect` 只给出四个角。构造 `Lightbar` 时把四个角按 **y 从小到大**排序：上面两个角取中点当 `top`，下面两个当 `bottom`。后面过滤、配对都用这些量，不再直接画旋转矩形的四个角。
 
 | 量 | 怎么来的 | 后面谁用 |
 |----|----------|----------|
@@ -364,9 +359,9 @@ Lightbar lightbar(cv::minAreaRect(contour), id);
 <a id="sec-detect-geom"></a>
 ### 4. 几何过滤
 
-二值图里什么亮都会出轮廓：反光、白色数字、地面高光、横着的灯带。几何过滤要做的事只有一句：**单看这一根，它长得像不像灯条。**
+几何过滤要做的事只有一句：**单看这一根，它长得像不像灯条。**
 
-判断用的阈值写在 `include/detector.hpp` 里。`detect_armor_hw.cpp` 已经 `#include "detector.hpp"`，作业里直接用这些名字，不用自己再定义：
+判断用的阈值写在 `include/detector.hpp` 里。不用自己再定义：
 
 ```cpp
 // include/detector.hpp
@@ -381,9 +376,7 @@ constexpr double kMaxSideRatio = 1.5;           // 两灯条长度比
 constexpr double kMaxRectangularErrorDeg = 25;  // 两灯条与连线是否接近垂直
 ```
 
-名字里带 `Deg` 的是**度**（45、25）；`lightbar.angle_error`、`armor.rectangular_error` 是**弧度**。比较时写成 `kMaxAngleErrorDeg * CV_PI / 180.0`，把度换成弧度。
-
-真灯条看起来是一根**竖着的细长亮条**。二值图里别的亮块长得不是这样，用三条几何条件丢掉：
+所用的**判断条件**如下：
 
 | 二值图上长什么样 | 为什么不是灯条 | 哪条规则挡掉 |
 |------------------|----------------|--------------|
@@ -391,13 +384,13 @@ constexpr double kMaxRectangularErrorDeg = 25;  // 两灯条与连线是否接�
 | 只有几个像素的小亮点 | 太远或只是噪声 | 长度 ≤ 15 像素 |
 | 接近正方形的亮块 | 多半是数字、反光 | 长宽比不在 1.5～20 |
 
-三项**同时**成立才留下，少一条就 `continue`。
+三项**同时**成立才留下，否则就 `continue`。
 
 ```cpp
 if (!check_lightbar(lightbar)) continue;
 ```
 
-三项必须同时成立：
+在**代码**里具体对应关系如下：
 
 | 条件 | 阈值 | 为什么这样设 | 挡掉什么 |
 |------|------|--------------|----------|
@@ -405,7 +398,7 @@ if (!check_lightbar(lightbar)) continue;
 | 长宽比 `1.5～20` | `kMin/MaxLightbarRatio` | 灯条是细长矩形。接近正方形（比值 ~1）不是灯条；细得像一条线（>20）多半是噪点 | 数字块、极细的亮线 |
 | 长度 `> 15` 像素 | `kMinLightbarLength` | 太短的亮点打不准，也容易是噪声 | 碎反光 |
 
-形状过了，再用颜色挡一次。课堂 `split` 已经看过：红方灯条在 **R 通道**更亮，蓝方在 **B 通道**更亮。这里不用整图 `split`，只把**这条轮廓上每个点**的 B、R 加起来比：
+**形状过了，再用颜色挡一次：** 正如刚刚所介绍的通道，我们将各个通道的数值相加，在进行大小比较，就能判断颜色了。
 
 ```cpp
 blue_sum += bgr_img.at<cv::Vec3b>(point)[0];   // B
@@ -415,9 +408,9 @@ if (red_sum  > blue_sum * 1.2) color = red;
 if (blue_sum > red_sum  * 1.2) color = blue;
 ```
 
-`1.2` 是为了别把「差不多亮」误判成红或蓝。HSV + `inRange` 也能按颜色抠，工程里两种都会见到；这份代码走通道求和，和本课 `split` 直接对应。
+> [!warning] `1.2` 是为了别把「差不多亮」误判成红或蓝。
 
-过完这一步，列表里剩下的才叫灯条：有形状、有红/蓝。假灯条会在这里被扔掉，后面配对才不会被噪声带偏。
+过完这一步，列表里剩下的才叫灯条：有形状、有红/蓝。
 
 <a id="sec-detect-pair"></a>
 ### 5. 灯条配对
@@ -433,47 +426,26 @@ if (blue_sum > red_sum  * 1.2) color = blue;
 
 配对要做的事：**从已经滤好的灯条里，找出「这两根属于同一块板」的组合。**
 
-先按灯条中心的 x 从左到右排好，这样每一对里左边那根一定是 `left`、右边是 `right`。再两两组合：红配红、蓝配蓝，不同色直接跳过（同一辆车的灯条同色，敌我也不会配到一起）。
+**`detector_armor.cpp`能够演示这种情况**。
 
-```
-按 x 排序后的灯条:   A        B        C
+**构造**时四个角取两根灯条的端点：**左上、右上、右下、左下**（顺序后面 PnP 还要用）。
 
-可能的配对:  (A,B)  (A,C)  (B,C)
-           同色才往下走，再看像不像一块板。
-           (A,C) 往往隔太远，间距比会超上限。
-```
+**中心**是两根灯条中心的中点。然后用三个量判断「这两根像不像一块板」——这是配对之后的第二轮几何过滤，滤的是**一对灯条的相对关系**，不是单根。
 
-```cpp
-Armor armor(left_bar, right_bar);   // 已保证 left.center.x < right.center.x
-if (check_armor(armor)) armors.emplace_back(armor); //emplace_back 把一个新元素接到 vector 的末尾
-```
-
-构造时四个角取两根灯条的端点：`左上、右上、右下、左下`（顺序后面 PnP 还要用）。中心是两根灯条中心的中点。然后用三个量判断「这两根像不像一块板」——这是配对之后的第二轮几何过滤，滤的是**一对灯条的相对关系**，不是单根。
-
-| 量 | 怎么算 | 合理范围 | 物理含义 | 挡掉什么 |
-|----|--------|----------|----------|----------|
-| `ratio` | 两灯条中心距 / 较长那根 | `1～5` | 小装甲大约 `135 / 56 ≈ 2.4`，大装甲大约 `230 / 56 ≈ 4.1` | 挨太近（同一根被拆成两半）或隔太远（左边配到另一块板的右边） |
-| `side_ratio` | 长灯条 / 短灯条 | `< 1.5` | 同一块板上两根灯条应当差不多长 | 一根完整、一根只露出一截；或配到了无关的亮条 |
-| `rectangular_error` | 灯条方向和「左右中心连线」相对垂直的偏差 | `< 25°` | 真装甲板接近矩形：整车转了，灯条和上下边一起转，仍然接近垂直 | 两根平行但错位的灯条、明显的平行四边形 |
-
-`rectangular_error` 可以记成：先算左右中心连线的倾角 `roll`，再看每根灯条的 `angle` 是否大约等于 `roll + 90°`，取左右偏差里较大的那个。车斜着停的时候，真板仍然能过；胡乱配对往往过不了。
-
-配对是「所有同色灯条两两试」，不是只配相邻的。所以三根并排时会配出两块「装甲板」，中间那根被共享：
+**配对**是「所有同色灯条两两试」，不是只配相邻的。所以三根并排时会配出两块「装甲板」，中间那根被共享：
 
 ```
 A —— B —— C      配出 (A,B) 和 (B,C)，B 用了两次
 ```
 
-去重：共享灯条时，留下 `ratio` 更接近 **2.5** 的那块（更像常见的小装甲），另一块丢掉。这样步兵车侧三根灯条并排时，不会把「左板的右灯条 + 右板的左灯条」当成第三块板。
-
-这一步结束，得到的是装甲板**候选**：颜色、中心、四个角点都有了。几何上像板，不等于板上真有数字——那是下一步的事。
+**去重**共享灯条时，留下 `ratio` 更接近 **2.5** 的那块（更像常见的小装甲）。
 
 <a id="sec-detect-digit"></a>
 ### 6. 数字分类 （这节课做了解）
 
-几何过滤和配对只看灯条形状。场上两根碰巧平行的灯、广告牌、误配的灯条，仍可能画出一个很像装甲板的绿框。自瞄还要知道**这是谁**：1 号英雄、2 号工程、3/4/5 步兵、哨兵、前哨站、基地，或者根本不是板。
+几何过滤和配对只看灯条形状。场上两根碰巧平行的灯、广告牌、误配的灯条，仍可能画出一个很像装甲板的绿框。自瞄还要知道**这是谁**：1 号英雄、2 号工程、3/4步兵、哨兵、前哨站、基地，或者根本不是板。
 
-分类要做的事：**把两灯条中间那块图案抠成一张正视图，交给网络认数字。**
+分类要做的事：**把两灯条中间那块图案抠成一张正视图，交给神经网络认数字。**
 
 ```
 原图上的斜四边形                    固定大小的正视图
@@ -492,21 +464,6 @@ cv::Mat M = cv::getPerspectiveTransform(src, dst);
 cv::warpPerspective(gray_img, pattern, M, {W, H});
 // pattern 送进分类网络
 ```
-
-网络（工程里常见是小 CNN，ONNX 推理）输出的是类别，不是「画出来的那个字」本身：
-
-| 输出 | 含义 | 板型（给PnP 用） |
-|------|------|-------------------------|
-| `1` | 英雄 | 大装甲（约 23 cm） |
-| `2` | 工程 | 小装甲（约 13.5 cm） |
-| `3` / `4` / `5` | 步兵 | 小装甲 |
-| `sentry` | 哨兵 | 小装甲 |
-| `outpost` | 前哨站 | 大装甲 |
-| `base` | 基地 | 大装甲 |
-| `not_armor` | 不是装甲板 | 丢掉这个候选 |
-
-置信度太低或判成 `not_armor`，这块候选就删掉——这是几何过滤之后的最后一道闸。判对之后，装甲板才同时具备：**颜色、四个角点、兵种、大小板型**。
-
 
 
 <a id="sec-detect-hw"></a>
@@ -541,7 +498,9 @@ build/detect_armor_hw imgs/red_2.jpg
 <a id="sec-pnp"></a>
 ## 四、用 `solvePnP` 求距离
 
-自瞄要打的不是「图像里的绿框」，而是几米外那块真实装甲板。识别给出的是像素坐标；**PnP** ：已知 \(n\) 个点的 3D 坐标和它们在图像上的 2D 投影，反推相机（或目标）的位姿。装甲板刚好有 4 个角点，所以 \(n = 4\)。
+自瞄要打的不是「图像里的绿框」，而是几米外那块真实装甲板。这时候，就需要借助**PnP**的力量了。简单来说，**PnP** 是已知 \(n\) 个点的 3D 坐标和它们在图像上的 2D 投影，反推相机的位姿。装甲板刚好有 4 个角点，所以 \(n = 4\)。
+> [!warning] tips
+> 由于PnP的原理十分复杂，在课后作业里面，我们只需了解是如何调用的就行。
 
 ```
 detect_armor → 左上 / 右上 / 右下 / 左下 四个角点 + 板型
@@ -555,6 +514,9 @@ cv::solvePnP(...)  →  rvec, tvec
         ▼
 距离 ≈ ||tvec|| ，朝向从 rvec 里拆
 ```
+
+> [!warning] tips
+> 以下的1~3在上节课相机标定时已经有所了解，所以我们接下来直接进入solvePnP的讲解，如果有相机标定原理不懂的，课后可以在课件里面自行复习巩固。
 
 <a id="sec-pnp-why"></a>
 ### 1. 识别之后还缺什么
@@ -629,9 +591,8 @@ bool cv::solvePnP(
     cameraMatrix,   // 内参 K
     distCoeffs,     // 畸变系数
     rvec,           // 输出：旋转向量（3×1）
-    tvec,           // 输出：平移向量（3×1）
-    useExtrinsicGuess,  // 可省略，默认 false
-    flags);         // 可省略；工程里平面装甲板常用 SOLVEPNP_IPPE
+    tvec);          // 输出：平移向量（3×1）
+         
 ```
 
 | 参数 | 本课怎么填 | 含义 |
@@ -643,26 +604,11 @@ bool cv::solvePnP(
 | `rvec` | 输出 | **旋转向量**，不是旋转矩阵 |
 | `tvec` | 输出 | 平移，相机坐标系，单位米 |
 
-本课作业主要填写前六个参数。
-
-| 方法 | 点数 | 特点 |
-|------|------|------|
-| `SOLVEPNP_ITERATIVE` | ≥4 | 默认；迭代优化，通用 |
-| `SOLVEPNP_EPNP` | ≥4 | 快，适合点数多 |
-| `SOLVEPNP_P3P` / `AP3P` | =3 | 最多几组解，要用第 4 点验证 |
-| **`SOLVEPNP_IPPE`** | ≥4 | **专为平面设计**，装甲板推荐 |
-
-`rvec` 要拿旋转矩阵时：
-
-```cpp
-cv::Mat R;
-cv::Rodrigues(rvec, R);   // 3×1 向量 → 3×3 矩阵
-```
 
 <a id="sec-pnp-3d"></a>
 ### 5. 3D 模型点（必须和 2D 四点顺序一致）
 
-四个角点在「装甲板中心为原点」的物体坐标系里取值，单位米。课堂采用同济习题的定义：**装甲板就在 \(XY\) 平面上（\(Z = 0\)）**。
+四个角点在「装甲板中心为原点」的物体坐标系里取值，单位米：**装甲板就在 \(XY\) 平面上（\(Z = 0\)）**。
 
 ```
         X →  （右为正）
@@ -673,11 +619,10 @@ Y ↓
   (-W/2, +L/2)    (+W/2, +L/2)
 ```
 
-- `ARMOR_WIDTH`：两灯条间距。小装甲 `0.135` m，大装甲 `0.230` m
-- `LIGHTBAR_LENGTH`：灯条长度，`0.056` m
+- `ARMOR_WIDTH`：两灯条间距。
+- `LIGHTBAR_LENGTH`：灯条长度
 - 顶部 \(Y\) 为负、底部 \(Y\) 为正，和「从上到下」一致
-
-本课 `Armor` 构造时四个角就是 `left.top`、`right.top`、`right.bottom`、`left.bottom`，和上面四点一一对应。顺序写反，解出来的位姿是错的。
+- 本课 `Armor` 构造时四个角就是 `left.top`、`right.top`、`right.bottom`、`left.bottom`，和上面四点一一对应。
 
 <a id="sec-pnp-hw"></a>
 ### 6. 课后作业 Task 01～03
@@ -704,6 +649,7 @@ static const std::vector<cv::Point3f> object_points{
 // img_points 是照片上装甲板 4 个点的像素坐标
 std::vector<cv::Point2f> img_points{
     // 与 Task 01 同一顺序
+    // 例如：armor.left.top,
 
 };
 
@@ -711,13 +657,6 @@ std::vector<cv::Point2f> img_points{
 cv::Mat rvec, tvec;
 // 调用 solvePnP，rvec / tvec 用来存输出
 cv::solvePnP( /* 在这里填写参数 */ );
-```
-
-```bash
-cd lecture3
-make -C build pnp_hw
-build/pnp_hw
-build/pnp_hw imgs/red_3.jpg
 ```
 
 没填完时终端会提示还没调用 `solvePnP`。三题都填完，效果应为：终端打印距离、`tvec`、`rvec`、yaw/pitch/roll，窗口 `pnp` 里画坐标轴。
